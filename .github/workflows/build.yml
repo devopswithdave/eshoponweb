@@ -2,8 +2,7 @@
 name: "Feature Flags CI/CD"
 on:
   workflow_dispatch:
-    
-
+  
 env:
   dotNetVersion: net6.0
   dotNetConfiguration: Release
@@ -56,28 +55,42 @@ jobs:
     - name: Test with dotnet
       run: dotnet test ./eShopOnWeb.sln --configuration Release   
 
-  release:
+  # release:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
+  #   - uses: actions/checkout@v2
+
+  #   - name: Setup Dotnet for use with actions
+  #     uses: actions/setup-dotnet@v1
+  #     with:
+  #       dotnet-version: ${{ env.dotNetSDKVersion }}
+  #       include-prerelease: ${{ env.dotNetSDKIncludePrerelease }}   
+  #   #Publish web and web service projects
+  #   - name: DotNet Publish Web Site
+  #     run: dotnet publish src/Web/Web.csproj --configuration ${{ env.dotNetConfiguration }} -p:Version=${{ needs.build.outputs.Version }} --output ${{ github.workspace }}/web --runtime ${{env.runtimeTarget}} 
+        
+  #   #Publish build artifacts to GitHub
+  #   - name: Upload website build artifacts back to GitHub
+  #     uses: actions/upload-artifact@master
+  #     with:
+  #       name: webapp
+  #       path: ${{ github.workspace }}/web
+
+  push:
     runs-on: ubuntu-latest
     needs: build
     steps:
     - uses: actions/checkout@v2
-
-    - name: Setup Dotnet for use with actions
-      uses: actions/setup-dotnet@v1
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
       with:
-        dotnet-version: ${{ env.dotNetSDKVersion }}
-        include-prerelease: ${{ env.dotNetSDKIncludePrerelease }}   
-    #Publish web and web service projects
-    - name: DotNet Publish Web Site
-      run: dotnet publish src/Web/Web.csproj --configuration ${{ env.dotNetConfiguration }} -p:Version=${{ needs.build.outputs.Version }} --output ${{ github.workspace }}/web --runtime ${{env.runtimeTarget}} 
-        
-    #Publish build artifacts to GitHub
-    - name: Upload website build artifacts back to GitHub
-      uses: actions/upload-artifact@master
-      with:
-        name: webapp
-        path: ${{ github.workspace }}/web
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
 
+    - name: push to GCP
+      run: |
+          gcloud builds submit --config cloudbuild.yaml .
 
-  
