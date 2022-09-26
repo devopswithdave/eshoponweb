@@ -1,0 +1,83 @@
+
+name: "Feature Flags CI/CD"
+on:
+  workflow_dispatch:
+    
+
+env:
+  dotNetVersion: net6.0
+  dotNetConfiguration: Release
+  dotNetSDKVersion: "6.0.x"
+  dotNetSDKIncludePrerelease: true
+  runtimeTarget: win-x64
+  
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: gitleaks-action
+      uses: zricethezav/gitleaks-action@master
+
+  build:
+    runs-on: windows-latest
+    outputs: # https://stackoverflow.com/questions/59175332/using-output-from-a-previous-job-in-a-new-one-in-a-github-action
+      Version: ${{ steps.gitversion.outputs.majorMinorPatch }} 
+      
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 #fetch-depth is needed for GitVersion
+        
+    # install and calculate the new version with GitVersion  
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.11
+      with:
+        versionSpec: '5.x'
+    - name: Determine Version
+      uses: gittools/actions/gitversion/execute@v0.9.11
+      id: gitversion # step id used as reference for output values
+    - name: Display GitVersion outputs
+      run: |
+        echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+        echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"   
+        echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}"    
+             
+    # install dependencies, build, and test
+    - name: Setup Dotnet for use with actions
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.dotNetSDKVersion }}
+        include-prerelease: ${{ env.dotNetSDKIncludePrerelease }} 
+
+    - name: Build with dotnet
+      run: dotnet build ./eShopOnWeb.sln --configuration Release
+    
+    - name: Test with dotnet
+      run: dotnet test ./eShopOnWeb.sln --configuration Release   
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup Dotnet for use with actions
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.dotNetSDKVersion }}
+        include-prerelease: ${{ env.dotNetSDKIncludePrerelease }}   
+    #Publish web and web service projects
+    - name: DotNet Publish Web Site
+      run: dotnet publish src/Web/Web.csproj --configuration ${{ env.dotNetConfiguration }} -p:Version=${{ needs.build.outputs.Version }} --output ${{ github.workspace }}/web --runtime ${{env.runtimeTarget}} 
+        
+    #Publish build artifacts to GitHub
+    - name: Upload website build artifacts back to GitHub
+      uses: actions/upload-artifact@master
+      with:
+        name: webapp
+        path: ${{ github.workspace }}/web
+
+
+
+  
