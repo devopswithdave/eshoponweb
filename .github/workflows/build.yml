@@ -12,12 +12,12 @@ env:
   runtimeTarget: win-x64
   
 jobs:
-  gitleaks:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: gitleaks-action
-      uses: zricethezav/gitleaks-action@master
+  # gitleaks:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - name: gitleaks-action
+  #     uses: zricethezav/gitleaks-action@master
 
   build:
     runs-on: windows-latest
