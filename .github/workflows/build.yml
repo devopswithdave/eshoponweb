@@ -92,5 +92,6 @@ jobs:
 
     - name: push to GCP
       run: |
+          ls -al
           gcloud builds submit --config cloudbuild.yaml .
 
