@@ -2,9 +2,9 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args:
   - build
-  - "--tag=gcr.io/df-eshoponweb/eshop"
+  - "--tag=gcr.io/eshoponweb-tf/eshop"
   - "--file=./src/Web/Dockerfile"
   - .
 
 images:
-- 'gcr.io/df-eshoponweb/eshop'
+- 'gcr.io/eshoponweb-tf/eshop'
